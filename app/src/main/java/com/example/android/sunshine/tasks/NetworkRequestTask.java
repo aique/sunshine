@@ -10,6 +10,9 @@ import com.example.android.sunshine.adapters.ForecastAdapter;
 import com.example.android.sunshine.utilities.NetworkUtils;
 import com.example.android.sunshine.utilities.OpenWeatherJsonUtils;
 
+/**
+ * @deprecated Esta clase ya no se está utilizando, en favor de AsyncTaskLoader.
+ */
 public class NetworkRequestTask extends AsyncTask<String, Void, String[]> {
 
     private Context context;

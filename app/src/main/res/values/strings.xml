@@ -24,8 +24,11 @@
     <!--or something similar.-->
     <string name="app_name">Sunshine</string>
 
-    <!--Opciones de menú-->
+    <!--Opciones del menú principal-->
     <string name="refresh_btn_title">Refresh</string>
+
+    <!--Opciones del menú del detalle-->
+    <string name="share_btn_title">Share weather details</string>
 
     <!--Errores-->
     <string name="api_query_error">Weather query error</string>

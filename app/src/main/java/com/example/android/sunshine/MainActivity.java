@@ -15,31 +15,40 @@
  */
 package com.example.android.sunshine;
 
-import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.AsyncTaskLoader;
+import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.example.android.sunshine.adapters.ForecastAdapter;
 import com.example.android.sunshine.data.SunshinePreferences;
 import com.example.android.sunshine.interfaces.ForecastListItemClickListener;
-import com.example.android.sunshine.tasks.NetworkRequestTask;
+import com.example.android.sunshine.utilities.NetworkUtils;
+import com.example.android.sunshine.utilities.OpenWeatherJsonUtils;
 
-public class MainActivity extends AppCompatActivity implements ForecastListItemClickListener {
+public class MainActivity extends AppCompatActivity implements ForecastListItemClickListener, LoaderManager.LoaderCallbacks<String[]> {
 
     private RecyclerView weatherDisplay;
     private ForecastAdapter forecastAdapter;
     private TextView errorDisplay;
     private ProgressBar progressBar;
 
+    private static final int FORECAST_NETWORK_REQUEST_LOADER = 0;
+    private static final String WEATHER_LOCATION_EXTRA = "weather_location_extra";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        Log.d("event_debug", "Creando la actividad MainActivity");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_forecast);
 
@@ -53,8 +62,7 @@ public class MainActivity extends AppCompatActivity implements ForecastListItemC
         forecastAdapter = new ForecastAdapter(this);
         weatherDisplay.setAdapter(forecastAdapter);
 
-        new NetworkRequestTask(this, weatherDisplay, forecastAdapter, errorDisplay, progressBar)
-                .execute(SunshinePreferences.getPreferredWeatherLocation(this));
+        getWeatherInfo();
     }
 
     @Override
@@ -67,17 +75,118 @@ public class MainActivity extends AppCompatActivity implements ForecastListItemC
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_refresh:
-                new NetworkRequestTask(this, weatherDisplay, forecastAdapter, errorDisplay, progressBar)
-                        .execute(SunshinePreferences.getPreferredWeatherLocation(this));
+                invalidateData();
+                getWeatherInfo();
                 break;
         }
 
         return true;
     }
 
+    private void invalidateData() {
+        forecastAdapter.setWeatherData(null);
+    }
+
+    private void getWeatherInfo() {
+        Bundle queryBundle = new Bundle();
+        queryBundle.putString(WEATHER_LOCATION_EXTRA, SunshinePreferences.getPreferredWeatherLocation(this));
+
+        LoaderManager loaderManager = getSupportLoaderManager();
+        Loader<String[]> networkRequestLoader = loaderManager.getLoader(FORECAST_NETWORK_REQUEST_LOADER);
+
+        if(networkRequestLoader == null) {
+            Log.d("event_debug", "Inicializando el loader ForecastNetworkRequest");
+            loaderManager.initLoader(FORECAST_NETWORK_REQUEST_LOADER, queryBundle, this);
+        } else {
+            Log.d("event_debug", "Relanzando el loader ForecastNetworkRequest");
+            loaderManager.restartLoader(FORECAST_NETWORK_REQUEST_LOADER, queryBundle, this);
+        }
+    }
+
     @Override
     public void onClick(String weatherForToday) {
-        Context context = this;
-        Toast.makeText(context, weatherForToday, Toast.LENGTH_SHORT).show();
+        openDetail(weatherForToday);
+    }
+
+    private void openDetail(String weatherForToday) {
+        Intent detailActivityIntent = new Intent(this, DetailActivity.class);
+        detailActivityIntent.putExtra(Intent.EXTRA_TEXT, weatherForToday);
+        startActivity(detailActivityIntent);
+    }
+
+    @Override
+    public Loader<String[]> onCreateLoader(int id, final Bundle args) {
+        Log.d("event_debug", "Evento onCreate del loader principal lanzado");
+        return new AsyncTaskLoader<String[]>(this) {
+            String[] weatherData = null;
+
+            @Override
+            public void onStartLoading() {
+                Log.d("event_debug", "Evento onStart del loader principal lanzado");
+                if(weatherData != null) {
+                    Log.d("event_debug", "Información del tiempo en caché");
+                    deliverResult(weatherData);
+                } else {
+                    Log.d("event_debug", "Información del tiempo no encontrada, solicitando el servicio...");
+                    progressBar.setVisibility(ProgressBar.VISIBLE);
+                    forceLoad();
+                }
+            }
+
+            @Override
+            public String[] loadInBackground() {
+                Log.d("event_debug", "Evento loadInBackground del loader principal lanzado");
+                String weatherLocation = args.getString(WEATHER_LOCATION_EXTRA);
+
+                if(weatherLocation == null || TextUtils.isEmpty(weatherLocation)) {
+                    return null;
+                }
+
+                try {
+                    String urlResults = NetworkUtils.getResponseFromHttpUrl(NetworkUtils.buildUrl(weatherLocation));
+                    return OpenWeatherJsonUtils.getSimpleWeatherStringsFromJson(getContext(), urlResults);
+                } catch(Exception ex) {
+                    ex.printStackTrace();
+                    return null;
+                }
+            }
+
+            public void deliverResult(String[] data) {
+                weatherData = data;
+                super.deliverResult(data);
+            }
+        };
+    }
+
+    @Override
+    public void onLoadFinished(Loader<String[]> loader, String[] data) {
+        Log.d("event_debug", "Evento onLoadFinished del loader principal lanzado");
+        progressBar.setVisibility(ProgressBar.INVISIBLE);
+
+        if(data != null && data.length > 0) {
+            showWeatherDataView(data);
+        } else {
+            showErrorMessage();
+        }
+    }
+
+    private void showWeatherDataView(String[] result)
+    {
+        weatherDisplay.setVisibility(TextView.VISIBLE);
+        errorDisplay.setVisibility(TextView.INVISIBLE);
+
+        forecastAdapter.setWeatherData(null);
+        forecastAdapter.setWeatherData(result);
+    }
+
+    private void showErrorMessage()
+    {
+        weatherDisplay.setVisibility(TextView.INVISIBLE);
+        errorDisplay.setVisibility(TextView.VISIBLE);
+    }
+
+    @Override
+    public void onLoaderReset(Loader<String[]> loader) {
+
     }
 }
