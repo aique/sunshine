@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <EditTextPreference
+        android:defaultValue="Mountain View, CA, 94843"
+        android:inputType="text"
+        android:singleLine="true"
+        android:key="@string/pref_location_key"
+        android:title="@string/pref_location_name"/>
+
+    <ListPreference
+        android:defaultValue="@string/pref_temperature_option1_value"
+        android:entries="@array/pref_temperature_units_labels"
+        android:entryValues="@array/pref_temperature_units_values"
+        android:key="@string/pref_temperature_units_key"
+        android:title="@string/pref_temperature_units_name"/>
+
+</PreferenceScreen>

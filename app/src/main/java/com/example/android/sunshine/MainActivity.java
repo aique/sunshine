@@ -77,10 +77,14 @@ public class MainActivity extends AppCompatActivity implements ForecastListItemC
             case R.id.action_refresh:
                 invalidateData();
                 getWeatherInfo();
-                break;
+                return true;
+            case R.id.action_settings:
+                Intent settingsIntent = new Intent(this, SettingsActivity.class);
+                startActivity(settingsIntent);
+                return true;
         }
 
-        return true;
+        return super.onOptionsItemSelected(item);
     }
 
     private void invalidateData() {

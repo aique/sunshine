@@ -37,13 +37,17 @@ public class DetailActivity extends AppCompatActivity {
         switch (item.getItemId()) {
             case R.id.action_share:
                 shareWeatherDetail(weatherDetail.getText().toString());
-                break;
+                return true;
+            case R.id.action_settings:
+                Intent settingsIntent = new Intent(this, SettingsActivity.class);
+                startActivity(settingsIntent);
+                return true;
             case android.R.id.home:
                 NavUtils.navigateUpFromSameTask(this);
-                break;
+                return true;
         }
 
-        return true;
+        return super.onOptionsItemSelected(item);
     }
 
     private void shareWeatherDetail(String weatherDetail) {

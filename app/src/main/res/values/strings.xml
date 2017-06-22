@@ -30,6 +30,9 @@
     <!--Opciones del menú del detalle-->
     <string name="share_btn_title">Share weather details</string>
 
+    <!--Opciones comunes-->
+    <string name="settings_btn_title">Settings</string>
+
     <!--Errores-->
     <string name="api_query_error">Weather query error</string>
 
@@ -147,5 +150,15 @@
     <!-- - - - - - - - - - - - - - -->
     <!--Used by SunshinePreferences-->
     <!-- - - - - - - - - - - - - - -->
+
+    <string name="pref_location_name">Location</string>
+    <string name="pref_location_key">location</string>
+    <string name="pref_temperature_units_name">Temperature units</string>
+    <string name="pref_temperature_units_key">units</string>
+    <string name="pref_temperature_option1_label">Option 1</string>
+    <string name="pref_temperature_option1_value">option1</string>
+    <string name="pref_temperature_option2_label">Option 2</string>
+    <string name="pref_temperature_option2_value">option2</string>
+
     <!--NONE-->
 </resources>
