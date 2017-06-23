@@ -16,7 +16,10 @@
 package com.example.android.sunshine;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.AsyncTaskLoader;
 import android.support.v4.content.Loader;
@@ -36,15 +39,23 @@ import com.example.android.sunshine.interfaces.ForecastListItemClickListener;
 import com.example.android.sunshine.utilities.NetworkUtils;
 import com.example.android.sunshine.utilities.OpenWeatherJsonUtils;
 
-public class MainActivity extends AppCompatActivity implements ForecastListItemClickListener, LoaderManager.LoaderCallbacks<String[]> {
+import java.net.URL;
+
+public class MainActivity extends AppCompatActivity implements
+        ForecastListItemClickListener,
+        LoaderManager.LoaderCallbacks<String[]>,
+        SharedPreferences.OnSharedPreferenceChangeListener {
 
     private RecyclerView weatherDisplay;
     private ForecastAdapter forecastAdapter;
     private TextView errorDisplay;
     private ProgressBar progressBar;
+    private SunshinePreferences preferences;
 
+    private static final String TAG = MainActivity.class.getSimpleName();
     private static final int FORECAST_NETWORK_REQUEST_LOADER = 0;
     private static final String WEATHER_LOCATION_EXTRA = "weather_location_extra";
+    private static final String TEMPERATURE_UNITS_EXTRA = "temperature_units_extra";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,10 +63,17 @@ public class MainActivity extends AppCompatActivity implements ForecastListItemC
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_forecast);
 
+        // obtención de referencias a elementos de la vista
         weatherDisplay = (RecyclerView) findViewById(R.id.rv_forecast);
         errorDisplay = (TextView) findViewById(R.id.weather_error);
         progressBar = (ProgressBar) findViewById(R.id.progress);
 
+        // se crea el objeto que gestiona la configuración y sus valores por defecto
+        preferences = new SunshinePreferences(this);
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        sharedPreferences.registerOnSharedPreferenceChangeListener(this);
+
+        // configuración del recyclerView
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         weatherDisplay.setLayoutManager(layoutManager);
         weatherDisplay.setHasFixedSize(true); // todos los elementos del listado tendrán el mismo tamaño
@@ -63,6 +81,13 @@ public class MainActivity extends AppCompatActivity implements ForecastListItemC
         weatherDisplay.setAdapter(forecastAdapter);
 
         getWeatherInfo();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        sharedPreferences.unregisterOnSharedPreferenceChangeListener(this);
     }
 
     @Override
@@ -78,6 +103,9 @@ public class MainActivity extends AppCompatActivity implements ForecastListItemC
                 invalidateData();
                 getWeatherInfo();
                 return true;
+            case R.id.action_map:
+                openMap(preferences.getPreferredWeatherLocation());
+                return true;
             case R.id.action_settings:
                 Intent settingsIntent = new Intent(this, SettingsActivity.class);
                 startActivity(settingsIntent);
@@ -87,13 +115,27 @@ public class MainActivity extends AppCompatActivity implements ForecastListItemC
         return super.onOptionsItemSelected(item);
     }
 
+    private void openMap(String location) {
+        Uri geoLocation = Uri.parse("geo:0,0?q=" + location);
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setData(geoLocation);
+
+        if(intent.resolveActivity(getPackageManager()) != null) {
+            startActivity(intent);
+        } else {
+            Log.d(TAG, "Couldn't call " + geoLocation.toString() + ", no receiving apps installed");
+        }
+    }
+
     private void invalidateData() {
         forecastAdapter.setWeatherData(null);
     }
 
     private void getWeatherInfo() {
         Bundle queryBundle = new Bundle();
-        queryBundle.putString(WEATHER_LOCATION_EXTRA, SunshinePreferences.getPreferredWeatherLocation(this));
+        Log.d("values_debug", "Obteniendo el tiempo para la localidad " + preferences.getPreferredWeatherLocation());
+        queryBundle.putString(WEATHER_LOCATION_EXTRA, preferences.getPreferredWeatherLocation());
+        queryBundle.putString(TEMPERATURE_UNITS_EXTRA, preferences.getTemperatureUnits());
 
         LoaderManager loaderManager = getSupportLoaderManager();
         Loader<String[]> networkRequestLoader = loaderManager.getLoader(FORECAST_NETWORK_REQUEST_LOADER);
@@ -140,15 +182,22 @@ public class MainActivity extends AppCompatActivity implements ForecastListItemC
             @Override
             public String[] loadInBackground() {
                 Log.d("event_debug", "Evento loadInBackground del loader principal lanzado");
-                String weatherLocation = args.getString(WEATHER_LOCATION_EXTRA);
 
+                String weatherLocation = args.getString(WEATHER_LOCATION_EXTRA);
                 if(weatherLocation == null || TextUtils.isEmpty(weatherLocation)) {
                     return null;
                 }
 
+                String units = args.getString(TEMPERATURE_UNITS_EXTRA);
+                if(units == null || TextUtils.isEmpty(units)) {
+                    return null;
+                }
+
                 try {
-                    String urlResults = NetworkUtils.getResponseFromHttpUrl(NetworkUtils.buildUrl(weatherLocation));
-                    return OpenWeatherJsonUtils.getSimpleWeatherStringsFromJson(getContext(), urlResults);
+                    URL weatherApiUrl = NetworkUtils.buildUrl(weatherLocation, units);
+                    Log.d("event_debug", "Realizando la consulta a la api: " + weatherApiUrl.toString());
+                    String urlResults = NetworkUtils.getResponseFromHttpUrl(weatherApiUrl);
+                    return OpenWeatherJsonUtils.getSimpleWeatherStringsFromJson(getContext(), preferences, urlResults);
                 } catch(Exception ex) {
                     ex.printStackTrace();
                     return null;
@@ -190,7 +239,20 @@ public class MainActivity extends AppCompatActivity implements ForecastListItemC
     }
 
     @Override
-    public void onLoaderReset(Loader<String[]> loader) {
+    public void onLoaderReset(Loader<String[]> loader) {}
 
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+        if(key.equals(getString(R.string.pref_location_key))) {
+            preferences.setUpLocationPreference();
+        } else if(key.equals(getString(R.string.pref_temperature_units_key))) {
+            preferences.setUpTemperatureUnitsPreferences();
+        }
+
+        getWeatherInfo();
+    }
+
+    public SunshinePreferences getPreferences() {
+        return preferences;
     }
 }

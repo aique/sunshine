@@ -18,6 +18,7 @@ package com.example.android.sunshine.utilities;
 import android.content.Context;
 import android.util.Log;
 
+import com.example.android.sunshine.MainActivity;
 import com.example.android.sunshine.R;
 import com.example.android.sunshine.data.SunshinePreferences;
 
@@ -54,10 +55,10 @@ public final class SunshineWeatherUtils {
      * @return Formatted temperature String in the following form:
      * "21°C"
      */
-    public static String formatTemperature(Context context, double temperature) {
+    public static String formatTemperature(Context context, SunshinePreferences preferences, double temperature) {
         int temperatureFormatResourceId = R.string.format_temperature_celsius;
 
-        if (!SunshinePreferences.isMetric(context)) {
+        if (!preferences.isMetric()) {
             temperature = celsiusToFahrenheit(temperature);
             temperatureFormatResourceId = R.string.format_temperature_fahrenheit;
         }
@@ -76,12 +77,12 @@ public final class SunshineWeatherUtils {
      *
      * @return String in the form: "HIGH°C / LOW°C"
      */
-    public static String formatHighLows(Context context, double high, double low) {
+    public static String formatHighLows(Context context, SunshinePreferences preferences, double high, double low) {
         long roundedHigh = Math.round(high);
         long roundedLow = Math.round(low);
 
-        String formattedHigh = formatTemperature(context, roundedHigh);
-        String formattedLow = formatTemperature(context, roundedLow);
+        String formattedHigh = formatTemperature(context, preferences, roundedHigh);
+        String formattedLow = formatTemperature(context, preferences, roundedLow);
 
         String highLowStr = formattedHigh + " / " + formattedLow;
         return highLowStr;
@@ -102,7 +103,9 @@ public final class SunshineWeatherUtils {
 
         int windFormat = R.string.format_wind_kmh;
 
-        if (!SunshinePreferences.isMetric(context)) {
+        MainActivity mainActivity = (MainActivity) context;
+
+        if (!mainActivity.getPreferences().isMetric()) {
             windFormat = R.string.format_wind_mph;
             windSpeed = .621371192237334f * windSpeed;
         }

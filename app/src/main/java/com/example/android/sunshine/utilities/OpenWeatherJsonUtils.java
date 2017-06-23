@@ -18,6 +18,8 @@ package com.example.android.sunshine.utilities;
 import android.content.ContentValues;
 import android.content.Context;
 
+import com.example.android.sunshine.data.SunshinePreferences;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -43,7 +45,7 @@ public final class OpenWeatherJsonUtils {
      *
      * @throws JSONException If JSON data cannot be properly parsed
      */
-    public static String[] getSimpleWeatherStringsFromJson(Context context, String forecastJsonStr)
+    public static String[] getSimpleWeatherStringsFromJson(Context context, SunshinePreferences preferences, String forecastJsonStr)
             throws JSONException {
 
         /* Weather information. Each day's forecast info is an element of the "list" array */
@@ -128,7 +130,7 @@ public final class OpenWeatherJsonUtils {
             JSONObject temperatureObject = dayForecast.getJSONObject(OWM_TEMPERATURE);
             high = temperatureObject.getDouble(OWM_MAX);
             low = temperatureObject.getDouble(OWM_MIN);
-            highAndLow = SunshineWeatherUtils.formatHighLows(context, high, low);
+            highAndLow = SunshineWeatherUtils.formatHighLows(context, preferences, high, low);
 
             parsedWeatherData[i] = date + " - " + description + " - " + highAndLow;
         }

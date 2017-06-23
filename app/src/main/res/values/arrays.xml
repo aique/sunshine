@@ -2,13 +2,13 @@
 <resources>
 
     <array name="pref_temperature_units_labels">
-        <item>@string/pref_temperature_option1_label</item>
-        <item>@string/pref_temperature_option2_label</item>
+        <item>@string/pref_temperature_metric_label</item>
+        <item>@string/pref_temperature_imperial_label</item>
     </array>
 
     <array name="pref_temperature_units_values">
-        <item>@string/pref_temperature_option1_value</item>
-        <item>@string/pref_temperature_option2_value</item>
+        <item>@string/pref_temperature_metric_value</item>
+        <item>@string/pref_temperature_imperial_value</item>
     </array>
 
 </resources>
