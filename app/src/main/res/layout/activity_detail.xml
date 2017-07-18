@@ -1,14 +1,162 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout
+
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:padding="8dp"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
     <TextView
-        android:id="@+id/tv_weather_detail"
-        android:textSize="22sp"
+        android:id="@+id/tv_weather_detail_date"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:layout_marginTop="32dp"
+        android:textAlignment="center"
+        android:textSize="30sp"
+        tools:text="Today, Jul 15" />
 
-</FrameLayout>
+    <TableLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="32dp"
+        android:columnCount="2"
+        android:rowCount="5">
+
+        <TableRow>
+
+            <ImageView
+                android:id="@+id/iv_weather_icon"
+                android:layout_width="0dp"
+                android:layout_height="80dp"
+                android:layout_column="0"
+                android:layout_weight="1"
+                app:srcCompat="@drawable/art_clear" />
+
+            <TextView
+                android:id="@+id/tv_weather_detail_max"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_column="1"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:textSize="36sp"
+                tools:text="7º" />
+
+        </TableRow>
+
+        <TableRow android:layout_marginBottom="32dp">
+
+            <TextView
+                android:id="@+id/tv_weather_detail_description"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_column="0"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:textSize="18sp"
+                tools:text="Heavy rain" />
+
+            <TextView
+                android:id="@+id/tv_weather_detail_min"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_column="1"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:textSize="18sp"
+                tools:text="3º" />
+
+        </TableRow>
+
+        <TableRow
+            android:layout_marginBottom="16dp"
+            android:layout_marginTop="32dp">
+
+            <TextView
+                android:id="@+id/tv_weather_detail_humidity_label"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_column="0"
+                android:layout_marginRight="8dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="Humidity"
+                android:textAlignment="viewEnd"
+                android:textSize="18sp" />
+
+            <TextView
+                android:id="@+id/tv_weather_detail_humidity"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_column="1"
+                android:layout_marginLeft="8dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:textAlignment="viewStart"
+                android:textSize="18sp"
+                tools:text="87%" />
+
+        </TableRow>
+
+        <TableRow android:layout_marginBottom="16dp">
+
+            <TextView
+                android:id="@+id/tv_weather_detail_pressure_label"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_column="0"
+                android:layout_marginRight="8dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="Pressure"
+                android:textAlignment="viewEnd"
+                android:textSize="18sp" />
+
+            <TextView
+                android:id="@+id/tv_weather_detail_pressure"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_column="1"
+                android:layout_marginLeft="8dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:textAlignment="viewStart"
+                android:textSize="18sp"
+                tools:text="998 hPa" />
+
+        </TableRow>
+
+        <TableRow android:layout_marginBottom="16dp">
+
+            <TextView
+                android:id="@+id/tv_weather_detail_wind_label"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_column="0"
+                android:layout_marginRight="8dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="Wind"
+                android:textAlignment="viewEnd"
+                android:textSize="18sp" />
+
+            <TextView
+                android:id="@+id/tv_weather_detail_wind"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_column="1"
+                android:layout_marginLeft="8dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:textAlignment="viewStart"
+                android:textSize="18sp"
+                tools:text="12 Km/h" />
+
+        </TableRow>
+
+    </TableLayout>
+
+</LinearLayout>

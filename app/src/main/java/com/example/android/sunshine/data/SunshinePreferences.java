@@ -71,16 +71,22 @@ public class SunshinePreferences {
             "1600 Amphitheatre Parkway, Mountain View, CA 94043";
 
     /**
-     * Helper method to handle setting location details in Preferences (City Name, Latitude,
-     * Longitude)
+     * Helper method to handle setting location details in Preferences (city name, latitude,
+     * longitude)
+     * <p>
+     * When the location details are updated, the database should to be cleared.
      *
-     * @param c        Context used to get the SharedPreferences
-     * @param cityName A human-readable city name, e.g "Mountain View"
-     * @param lat      The latitude of the city
-     * @param lon      The longitude of the city
+     * @param context  Context used to get the SharedPreferences
+     * @param lat      the latitude of the city
+     * @param lon      the longitude of the city
      */
-    static public void setLocationDetails(Context c, String cityName, double lat, double lon) {
-        /** This will be implemented in a future lesson **/
+    public static void setLocationDetails(Context context, double lat, double lon) {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences.Editor editor = sp.edit();
+
+        editor.putLong(PREF_COORD_LAT, Double.doubleToRawLongBits(lat));
+        editor.putLong(PREF_COORD_LONG, Double.doubleToRawLongBits(lon));
+        editor.apply();
     }
 
     /**
@@ -120,10 +126,23 @@ public class SunshinePreferences {
     /**
      * Returns true if the user has selected metric temperature display.
      *
-     * @return true If metric display should be used
+     * @param context Context used to get the SharedPreferences
+     * @return true if metric display should be used, false if imperial display should be used
      */
-    public boolean isMetric() {
-        return temperatureUnits.equals("metric");
+    public static boolean isMetric(Context context) {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
+
+        String keyForUnits = context.getString(R.string.pref_temperature_units_key);
+        String defaultUnits = context.getString(R.string.pref_temperature_metric_value);
+        String preferredUnits = sp.getString(keyForUnits, defaultUnits);
+        String metric = context.getString(R.string.pref_temperature_metric_value);
+
+        boolean userPrefersMetric = false;
+        if (metric.equals(preferredUnits)) {
+            userPrefersMetric = true;
+        }
+
+        return userPrefersMetric;
     }
 
     /**
@@ -169,5 +188,20 @@ public class SunshinePreferences {
     public static double[] getDefaultWeatherCoordinates() {
         /** This will be implemented in a future lesson **/
         return DEFAULT_WEATHER_COORDINATES;
+    }
+
+    /**
+     * Saves the time that a notification is shown. This will be used to get the ellapsed time
+     * since a notification was shown.
+     *
+     * @param context Used to access SharedPreferences
+     * @param timeOfNotification Time of last notification to save (in UNIX time)
+     */
+    public static void saveLastNotificationTime(Context context, long timeOfNotification) {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences.Editor editor = sp.edit();
+        String lastNotificationKey = context.getString(R.string.pref_last_notification);
+        editor.putLong(lastNotificationKey, timeOfNotification);
+        editor.apply();
     }
 }

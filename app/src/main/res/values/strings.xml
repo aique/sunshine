@@ -37,6 +37,9 @@
     <!--Errores-->
     <string name="api_query_error">Weather query error</string>
 
+    <!--Ruta del proyecto-->
+    <string name="content_authority">com.example.android.sunshine</string>
+
     <!-- - - - - - - - - - - - - -->
     <!--Used by SunshineDateUtils-->
     <!-- - - - - - - - - - - - - -->
@@ -56,6 +59,10 @@
     <!-- - - - - - - - - - - - - - - -->
     <!-- Used by SunshineWeatherUtils-->
     <!-- - - - - - - - - - - - - - - -->
+
+    <string name="format_temperature">
+        <xliff:g id="temp">%1.0f</xliff:g>\u00B0
+    </string>
 
     <!-- Temperature format in Celsius [CHAR LIMIT=5] -->
     <string name="format_temperature_celsius">
@@ -162,5 +169,16 @@
     <string name="pref_temperature_imperial_label">Imperial</string>
     <string name="pref_temperature_imperial_value">imperial</string>
 
+    <string name="pref_last_notification">last_notification</string>
+
     <!--NONE-->
+
+    <!-- Used by NotificationUtils -->
+
+    <!-- The format of the notification we show when the weather is updated -->
+    <string name="format_notification">
+        Forecast:<xliff:g id="condition">%1$s</xliff:g> -
+        High:<xliff:g id="high">%2$s</xliff:g>
+        Low:<xliff:g id="low">%3$s</xliff:g>
+    </string>
 </resources>

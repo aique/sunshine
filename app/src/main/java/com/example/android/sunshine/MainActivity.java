@@ -17,6 +17,7 @@ package com.example.android.sunshine;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -26,7 +27,6 @@ import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -35,15 +35,14 @@ import android.widget.TextView;
 
 import com.example.android.sunshine.adapters.ForecastAdapter;
 import com.example.android.sunshine.data.SunshinePreferences;
+import com.example.android.sunshine.data.provider.WeatherContract;
 import com.example.android.sunshine.interfaces.ForecastListItemClickListener;
-import com.example.android.sunshine.utilities.NetworkUtils;
-import com.example.android.sunshine.utilities.OpenWeatherJsonUtils;
-
-import java.net.URL;
+import com.example.android.sunshine.sync.SunshineSyncTask;
+import com.example.android.sunshine.sync.SunshineSyncUtils;
 
 public class MainActivity extends AppCompatActivity implements
         ForecastListItemClickListener,
-        LoaderManager.LoaderCallbacks<String[]>,
+        LoaderManager.LoaderCallbacks<Cursor>,
         SharedPreferences.OnSharedPreferenceChangeListener {
 
     private RecyclerView weatherDisplay;
@@ -51,6 +50,7 @@ public class MainActivity extends AppCompatActivity implements
     private TextView errorDisplay;
     private ProgressBar progressBar;
     private SunshinePreferences preferences;
+    private int mPosition = RecyclerView.NO_POSITION;
 
     private static final String TAG = MainActivity.class.getSimpleName();
     private static final int FORECAST_NETWORK_REQUEST_LOADER = 0;
@@ -77,10 +77,13 @@ public class MainActivity extends AppCompatActivity implements
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         weatherDisplay.setLayoutManager(layoutManager);
         weatherDisplay.setHasFixedSize(true); // todos los elementos del listado tendrán el mismo tamaño
-        forecastAdapter = new ForecastAdapter(this);
+        forecastAdapter = new ForecastAdapter(this, this);
         weatherDisplay.setAdapter(forecastAdapter);
 
         getWeatherInfo();
+
+        SunshineSyncUtils sunshineSyncUtils = new SunshineSyncUtils(this);
+        sunshineSyncUtils.initialize();
     }
 
     @Override
@@ -150,21 +153,22 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onClick(String weatherForToday) {
-        openDetail(weatherForToday);
+    public void onClick(long date) {
+        openDetail(date);
     }
 
-    private void openDetail(String weatherForToday) {
+    private void openDetail(long date) {
         Intent detailActivityIntent = new Intent(this, DetailActivity.class);
-        detailActivityIntent.putExtra(Intent.EXTRA_TEXT, weatherForToday);
+        Uri uriForDateClicked = WeatherContract.WeatherEntry.buildWeatherUriWithDate(date);
+        detailActivityIntent.setData(uriForDateClicked);
         startActivity(detailActivityIntent);
     }
 
     @Override
-    public Loader<String[]> onCreateLoader(int id, final Bundle args) {
+    public Loader<Cursor> onCreateLoader(int id, final Bundle args) {
         Log.d("event_debug", "Evento onCreate del loader principal lanzado");
-        return new AsyncTaskLoader<String[]>(this) {
-            String[] weatherData = null;
+        return new AsyncTaskLoader<Cursor>(this) {
+            Cursor weatherData = null;
 
             @Override
             public void onStartLoading() {
@@ -180,31 +184,17 @@ public class MainActivity extends AppCompatActivity implements
             }
 
             @Override
-            public String[] loadInBackground() {
+            public Cursor loadInBackground() {
                 Log.d("event_debug", "Evento loadInBackground del loader principal lanzado");
+                SunshineSyncTask syncTask = new SunshineSyncTask(preferences);
 
-                String weatherLocation = args.getString(WEATHER_LOCATION_EXTRA);
-                if(weatherLocation == null || TextUtils.isEmpty(weatherLocation)) {
-                    return null;
-                }
-
-                String units = args.getString(TEMPERATURE_UNITS_EXTRA);
-                if(units == null || TextUtils.isEmpty(units)) {
-                    return null;
-                }
-
-                try {
-                    URL weatherApiUrl = NetworkUtils.buildUrl(weatherLocation, units);
-                    Log.d("event_debug", "Realizando la consulta a la api: " + weatherApiUrl.toString());
-                    String urlResults = NetworkUtils.getResponseFromHttpUrl(weatherApiUrl);
-                    return OpenWeatherJsonUtils.getSimpleWeatherStringsFromJson(getContext(), preferences, urlResults);
-                } catch(Exception ex) {
-                    ex.printStackTrace();
-                    return null;
-                }
+                return syncTask.syncWeather(
+                    args.getString(WEATHER_LOCATION_EXTRA),
+                    args.getString(TEMPERATURE_UNITS_EXTRA),
+                    getContext());
             }
 
-            public void deliverResult(String[] data) {
+            public void deliverResult(Cursor data) {
                 weatherData = data;
                 super.deliverResult(data);
             }
@@ -212,18 +202,23 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onLoadFinished(Loader<String[]> loader, String[] data) {
+    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
         Log.d("event_debug", "Evento onLoadFinished del loader principal lanzado");
         progressBar.setVisibility(ProgressBar.INVISIBLE);
 
-        if(data != null && data.length > 0) {
+        forecastAdapter.swapCursor(data);
+        if(mPosition == RecyclerView.NO_POSITION) {
+            mPosition = 0;
+        }
+        weatherDisplay.smoothScrollToPosition(mPosition);
+        if(data.getCount() != 0) {
             showWeatherDataView(data);
         } else {
             showErrorMessage();
         }
     }
 
-    private void showWeatherDataView(String[] result)
+    private void showWeatherDataView(Cursor result)
     {
         weatherDisplay.setVisibility(TextView.VISIBLE);
         errorDisplay.setVisibility(TextView.INVISIBLE);
@@ -239,17 +234,17 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onLoaderReset(Loader<String[]> loader) {}
+    public void onLoaderReset(Loader<Cursor> loader) {}
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         if(key.equals(getString(R.string.pref_location_key))) {
             preferences.setUpLocationPreference();
+            getWeatherInfo();
         } else if(key.equals(getString(R.string.pref_temperature_units_key))) {
             preferences.setUpTemperatureUnitsPreferences();
+            getWeatherInfo();
         }
-
-        getWeatherInfo();
     }
 
     public SunshinePreferences getPreferences() {

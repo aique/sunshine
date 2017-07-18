@@ -1,4 +1,4 @@
-package com.example.android.sunshine.data;
+package com.example.android.sunshine.data.provider;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;

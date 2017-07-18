@@ -16,11 +16,13 @@
 package com.example.android.sunshine.utilities;
 
 import android.content.Context;
+import android.database.Cursor;
 import android.util.Log;
 
 import com.example.android.sunshine.MainActivity;
 import com.example.android.sunshine.R;
 import com.example.android.sunshine.data.SunshinePreferences;
+import com.example.android.sunshine.data.provider.WeatherContract;
 
 /**
  * Contains useful utilities for a weather app, such as conversion between Celsius and Fahrenheit,
@@ -30,6 +32,15 @@ import com.example.android.sunshine.data.SunshinePreferences;
 public final class SunshineWeatherUtils {
 
     private static final String LOG_TAG = SunshineWeatherUtils.class.getSimpleName();
+
+    // índices para cada uno de los campos dentro de la definición de la tabla
+    public static final int INDEX_WEATHER_DATE = 0;
+    public static final int INDEX_WEATHER_MAX_TEMP = 1;
+    public static final int INDEX_WEATHER_MIN_TEMP = 2;
+    public static final int COLUMN_HUMIDITY = 3;
+    public static final int COLUMN_PRESSURE = 4;
+    public static final int COLUMN_WIND_SPEED = 5;
+    public static final int INDEX_WEATHER_CONDITION_ID = 7;
 
     /**
      * This method will convert a temperature from Celsius to Fahrenheit.
@@ -47,21 +58,20 @@ public final class SunshineWeatherUtils {
      * Temperature data is stored in Celsius by our app. Depending on the user's preference,
      * the app may need to display the temperature in Fahrenheit. This method will perform that
      * temperature conversion if necessary. It will also format the temperature so that no
-     * decimal points show. Temperatures will be formatted to the following form: "21°C"
+     * decimal points show. Temperatures will be formatted to the following form: "21°"
      *
      * @param context     Android Context to access preferences and resources
      * @param temperature Temperature in degrees Celsius (°C)
      *
      * @return Formatted temperature String in the following form:
-     * "21°C"
+     * "21°"
      */
-    public static String formatTemperature(Context context, SunshinePreferences preferences, double temperature) {
-        int temperatureFormatResourceId = R.string.format_temperature_celsius;
-
-        if (!preferences.isMetric()) {
+    public static String formatTemperature(Context context, double temperature) {
+        if (!SunshinePreferences.isMetric(context)) {
             temperature = celsiusToFahrenheit(temperature);
-            temperatureFormatResourceId = R.string.format_temperature_fahrenheit;
         }
+
+        int temperatureFormatResourceId = R.string.format_temperature;
 
         /* For presentation, assume the user doesn't care about tenths of a degree. */
         return String.format(context.getString(temperatureFormatResourceId), temperature);
@@ -69,20 +79,20 @@ public final class SunshineWeatherUtils {
 
     /**
      * This method will format the temperatures to be displayed in the
-     * following form: "HIGH°C / LOW°C"
+     * following form: "HIGH° / LOW°"
      *
      * @param context Android Context to access preferences and resources
      * @param high    High temperature for a day in user's preferred units
      * @param low     Low temperature for a day in user's preferred units
      *
-     * @return String in the form: "HIGH°C / LOW°C"
+     * @return String in the form: "HIGH° / LOW°"
      */
-    public static String formatHighLows(Context context, SunshinePreferences preferences, double high, double low) {
+    public static String formatHighLows(Context context, double high, double low) {
         long roundedHigh = Math.round(high);
         long roundedLow = Math.round(low);
 
-        String formattedHigh = formatTemperature(context, preferences, roundedHigh);
-        String formattedLow = formatTemperature(context, preferences, roundedLow);
+        String formattedHigh = formatTemperature(context, roundedHigh);
+        String formattedLow = formatTemperature(context, roundedLow);
 
         String highLowStr = formattedHigh + " / " + formattedLow;
         return highLowStr;
@@ -105,7 +115,7 @@ public final class SunshineWeatherUtils {
 
         MainActivity mainActivity = (MainActivity) context;
 
-        if (!mainActivity.getPreferences().isMetric()) {
+        if (!mainActivity.getPreferences().isMetric(context)) {
             windFormat = R.string.format_wind_mph;
             windSpeed = .621371192237334f * windSpeed;
         }
@@ -354,17 +364,76 @@ public final class SunshineWeatherUtils {
     }
 
     /**
-     * Helper method to provide the art resource id according to the weather condition id returned
-     * by the OpenWeatherMap call.
+     * Helper method to provide the icon resource id according to the weather condition id returned
+     * by the OpenWeatherMap call. This method is very similar to
+     *
+     *   {@link #getLargeArtResourceIdForWeatherCondition(int)}.
+     *
+     * The difference between these two methods is that this method provides smaller assets, used
+     * in the list item layout for a "future day", as well as
      *
      * @param weatherId from OpenWeatherMap API response
+     *                  See http://openweathermap.org/weather-conditions for a list of all IDs
      *
      * @return resource id for the corresponding icon. -1 if no relation is found.
      */
-    public static int getArtResourceForWeatherCondition(int weatherId) {
+    public static int getSmallArtResourceIdForWeatherCondition(int weatherId) {
+
         /*
-         * Based on weather code data found at:
-         * http://bugs.openweathermap.org/projects/api/wiki/Weather_Condition_Codes
+         * Based on weather code data for Open Weather Map.
+         */
+        if (weatherId >= 200 && weatherId <= 232) {
+            return R.drawable.ic_storm;
+        } else if (weatherId >= 300 && weatherId <= 321) {
+            return R.drawable.ic_light_rain;
+        } else if (weatherId >= 500 && weatherId <= 504) {
+            return R.drawable.ic_rain;
+        } else if (weatherId == 511) {
+            return R.drawable.ic_snow;
+        } else if (weatherId >= 520 && weatherId <= 531) {
+            return R.drawable.ic_rain;
+        } else if (weatherId >= 600 && weatherId <= 622) {
+            return R.drawable.ic_snow;
+        } else if (weatherId >= 701 && weatherId <= 761) {
+            return R.drawable.ic_fog;
+        } else if (weatherId == 761 || weatherId == 771 || weatherId == 781) {
+            return R.drawable.ic_storm;
+        } else if (weatherId == 800) {
+            return R.drawable.ic_clear;
+        } else if (weatherId == 801) {
+            return R.drawable.ic_light_clouds;
+        } else if (weatherId >= 802 && weatherId <= 804) {
+            return R.drawable.ic_cloudy;
+        } else if (weatherId >= 900 && weatherId <= 906) {
+            return R.drawable.ic_storm;
+        } else if (weatherId >= 958 && weatherId <= 962) {
+            return R.drawable.ic_storm;
+        } else if (weatherId >= 951 && weatherId <= 957) {
+            return R.drawable.ic_clear;
+        }
+
+        Log.e(LOG_TAG, "Unknown Weather: " + weatherId);
+        return R.drawable.ic_storm;
+    }
+
+    /**
+     * Helper method to provide the art resource ID according to the weather condition ID returned
+     * by the OpenWeatherMap call. This method is very similar to
+     *
+     *   {@link #getSmallArtResourceIdForWeatherCondition(int)}.
+     *
+     * The difference between these two methods is that this method provides larger assets, used
+     * in the "today view" of the list, as well as in the DetailActivity.
+     *
+     * @param weatherId from OpenWeatherMap API response
+     *                  See http://openweathermap.org/weather-conditions for a list of all IDs
+     *
+     * @return resource ID for the corresponding icon. -1 if no relation is found.
+     */
+    public static int getLargeArtResourceIdForWeatherCondition(int weatherId) {
+
+        /*
+         * Based on weather code data for Open Weather Map.
          */
         if (weatherId >= 200 && weatherId <= 232) {
             return R.drawable.art_storm;
@@ -395,7 +464,66 @@ public final class SunshineWeatherUtils {
         } else if (weatherId >= 951 && weatherId <= 957) {
             return R.drawable.art_clear;
         }
+
         Log.e(LOG_TAG, "Unknown Weather: " + weatherId);
         return R.drawable.art_storm;
+    }
+
+    public static int getWeatherIconFromCursor(Cursor cursor) {
+        int weatherId = cursor.getInt(INDEX_WEATHER_CONDITION_ID);
+
+        return SunshineWeatherUtils.getSmallArtResourceIdForWeatherCondition(weatherId);
+    }
+
+    public static String getWeatherDateFromCursor(Cursor cursor, Context context) {
+        long dateInMillis = cursor.getLong(INDEX_WEATHER_DATE);
+        String dateString = SunshineDateUtils.getFriendlyDateString(context, dateInMillis, false);
+
+        return dateString;
+    }
+
+    public static String getWeatherDescriptionFromCursor(Cursor cursor, Context context) {
+        int weatherId = cursor.getInt(INDEX_WEATHER_CONDITION_ID);
+        String description = SunshineWeatherUtils.getStringForWeatherCondition(context, weatherId);
+
+        return description;
+    }
+
+    public static String getWeatherHighTemperatureFromCursor(Cursor cursor) {
+        int highInCelsius = (int) cursor.getDouble(INDEX_WEATHER_MAX_TEMP);
+
+        return Integer.toString(highInCelsius);
+    }
+
+    public static String getWeatherMinTemperatureFromCursor(Cursor cursor) {
+        int lowInCelsius = (int) cursor.getDouble(INDEX_WEATHER_MIN_TEMP);
+
+        return Integer.toString(lowInCelsius);
+    }
+
+    public static String getHumidityFromCursor(Cursor cursor) {
+        return cursor.getString(COLUMN_HUMIDITY);
+    }
+
+    public static String getPressureFromCursor(Cursor cursor) {
+        return cursor.getString(COLUMN_PRESSURE);
+    }
+
+    public static String getWindSpeedFromCursor(Cursor cursor) {
+        return cursor.getString(COLUMN_WIND_SPEED);
+    }
+
+    public static String getWeatherSummaryFromCursor(Cursor cursor, Context context) {
+        long dateInMillis = cursor.getLong(INDEX_WEATHER_DATE);
+        String dateString = SunshineDateUtils.getFriendlyDateString(context, dateInMillis, false);
+        int weatherId = cursor.getInt(INDEX_WEATHER_CONDITION_ID);
+        String description = SunshineWeatherUtils.getStringForWeatherCondition(context, weatherId);
+        double highInCelsius = cursor.getDouble(INDEX_WEATHER_MAX_TEMP);
+        double lowInCelsius = cursor.getDouble(INDEX_WEATHER_MIN_TEMP);
+
+        String highAndLowTemperature =
+                SunshineWeatherUtils.formatHighLows(context, highInCelsius, lowInCelsius);
+
+        return dateString + " - " + description + " - " + highAndLowTemperature;
     }
 }

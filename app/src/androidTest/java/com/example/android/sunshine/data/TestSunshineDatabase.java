@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.example.android.sunshine;
+package com.example.android.sunshine.data;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -24,8 +24,8 @@ import android.provider.BaseColumns;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
 
-import com.example.android.sunshine.data.WeatherContract;
-import com.example.android.sunshine.data.WeatherDbHelper;
+import com.example.android.sunshine.data.provider.WeatherContract;
+import com.example.android.sunshine.data.provider.WeatherDbHelper;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -37,11 +37,11 @@ import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
 
-import static com.example.android.sunshine.TestUtilities.getConstantNameByStringValue;
-import static com.example.android.sunshine.TestUtilities.getStaticIntegerField;
-import static com.example.android.sunshine.TestUtilities.getStaticStringField;
-import static com.example.android.sunshine.TestUtilities.studentReadableClassNotFound;
-import static com.example.android.sunshine.TestUtilities.studentReadableNoSuchField;
+import static com.example.android.sunshine.data.TestUtilities.getConstantNameByStringValue;
+import static com.example.android.sunshine.data.TestUtilities.getStaticIntegerField;
+import static com.example.android.sunshine.data.TestUtilities.getStaticStringField;
+import static com.example.android.sunshine.data.TestUtilities.studentReadableClassNotFound;
+import static com.example.android.sunshine.data.TestUtilities.studentReadableNoSuchField;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertNotSame;
@@ -443,7 +443,7 @@ public class TestSunshineDatabase {
      * This method tests that our database contains all of the tables that we think it should
      * contain. Although in our case, we just have one table that we expect should be added
      * <p>
-     * {@link com.example.android.sunshine.data.WeatherContract.WeatherEntry#TABLE_NAME}.
+     * {@link WeatherContract.WeatherEntry#TABLE_NAME}.
      * <p>
      * Despite only needing to check one table name in Sunshine, we set this method up so that
      * you can use it in other apps to test databases with more than one table.
